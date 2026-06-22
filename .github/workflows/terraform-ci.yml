@@ -39,7 +39,13 @@ jobs:
               run: terraform validate
 
             - name: Plan Terraform Changes
-              run: terraform plan -out=tfplan -no-color
+              run: terraform plan -out=tfplan
 
             - name: Convert plan to readable text
               run: terraform show -no-color tfplan > tfplan.txt
+
+            - name: Upload Terraform Plan Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: terraform-plan
+                path: tfplan.txt
