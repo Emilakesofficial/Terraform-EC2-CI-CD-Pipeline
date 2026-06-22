@@ -1,0 +1,29 @@
+name: Terraform Basic Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Check Terraform Formatting
+      run: terraform fmt -check -recursive
+
+    - name: Initialize Terraform
+      run: terraform init
+
+    - name: Validate Terraform
+      run: terraform validate
+
+    # - name: Plan Terraform changes
+    #   run: terraform plan
