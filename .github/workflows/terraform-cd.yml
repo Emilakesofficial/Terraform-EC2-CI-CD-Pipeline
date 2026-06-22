@@ -64,20 +64,3 @@ jobs:
 
       - name: Apply Terraform Changes
         run: terraform apply -auto-approve tfplan
-      
-      - name: Show generated file safely
-        run: |
-          echo "Generated files:"
-          find generated -type f -maxdepth 2 -print
-
-          echo **
-          echo "Generated kubernetes deployments manifests:"
-          cat generated/test -app-deployment.yml
-
-      - name: Upload terraform apply artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-generated-demo
-          path: |
-            generated/README.md
-            generated/test-app-deployment.yml
