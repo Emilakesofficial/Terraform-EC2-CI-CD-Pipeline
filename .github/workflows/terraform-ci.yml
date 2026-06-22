@@ -18,7 +18,17 @@ jobs:
 
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v3
-            
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ secrets.AWS_REGION }}
+
+            - name: Verify AWS Identity
+              run: aws sts get-caller-identity
+
             - name: Check Terraform Formatting
               run: terraform fmt -check
 
@@ -29,4 +39,7 @@ jobs:
               run: terraform validate
 
             - name: Plan Terraform Changes
-              run: terraform plan -no-color
+              run: terraform plan -out=tfplan -no-color
+
+            - name: Convert plan to readable text
+              run: terraform show -no-color tfplan > tfplan.txt
