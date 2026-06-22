@@ -52,8 +52,8 @@ module "ec2_security_group" {
 
   tags = var.tags
 }
-# fix
-module "ec2-instance" {
+
+module "ec2" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 5.0"
 
