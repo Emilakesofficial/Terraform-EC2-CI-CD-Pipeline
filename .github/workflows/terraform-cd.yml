@@ -1,0 +1,83 @@
+name: Terraform CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-cd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate AWS Configuration
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          [ -z "$AWS_ACCESS_KEY_ID" ] && echo "ERROR: Missing AWS_ACCESS_KEY_ID secret" && exit 1
+          [ -z "$AWS_SECRET_ACCESS_KEY" ] && echo "ERROR: Missing AWS_SECRET_ACCESS_KEY secret" && exit 1
+          [ -z "$AWS_REGION" ] && echo "ERROR: Missing AWS_REGION secret" && exit 1
+
+          echo "AWS configuration validated"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      - name: Check Terraform Formatting
+        run: terraform fmt -check -recursive
+
+      - name: Initialize Terraform
+        run: terraform init
+
+      - name: Validate Terraform Configuration
+        run: terraform validate
+
+      - name: Plan Terraform Changes
+        run: terraform plan -out=tfplan -no-color
+
+      - name: Convert Plan To Readable Text
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: tfplan.txt
+
+      - name: Apply Terraform Changes
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Show generated file safely
+        run: |
+          echo "Generated files:"
+          find generated -type f -maxdepth 2 -print
+
+          echo **
+          echo "Generated kubernetes deployments manifests:"
+          cat generated/test -app-deployment.yml
+
+      - name: Upload terraform apply artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-generated-demo
+          path: |
+            generated/README.md
+            generated/test-app-deployment.yml
