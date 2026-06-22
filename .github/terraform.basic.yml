@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Say Hello
+      run: echo "Hello world!"
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -25,5 +27,4 @@ jobs:
     - name: Validate Terraform
       run: terraform validate
 
-    # - name: Plan Terraform changes
-    #   run: terraform plan
+    
