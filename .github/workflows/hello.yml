@@ -1,0 +1,17 @@
+name: Hello World Workflow
+
+on:
+    workflow_dispatch:
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say hello
+        run: echo "Hello, World!"
+
+      - name: show current date and time
+        run: date
+
+      - name: show current directory
+        run: pwd
