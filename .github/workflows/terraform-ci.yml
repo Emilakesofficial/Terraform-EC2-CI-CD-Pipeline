@@ -1,45 +1,63 @@
 name: Terraform CI
 
 on:
-    pull_request:
-        branches:
-            - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    terraform-ci:
-        runs-on: ubuntu-latest
+  terraform-ci:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Setup Terraform
-              uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-            - name: Configure AWS Credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                aws-region: ${{ secrets.AWS_REGION }}
+      - name: Validate AWS Configuration
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          [ -z "$AWS_ACCESS_KEY_ID" ] && echo "ERROR: Missing AWS_ACCESS_KEY_ID secret" && exit 1
+          [ -z "$AWS_SECRET_ACCESS_KEY" ] && echo "ERROR: Missing AWS_SECRET_ACCESS_KEY secret" && exit 1
+          [ -z "$AWS_REGION" ] && echo "ERROR: Missing AWS_REGION secret" && exit 1
 
-            - name: Verify AWS Identity
-              run: aws sts get-caller-identity
+          echo "AWS configuration validated"
 
-            - name: Check Terraform Formatting
-              run: terraform fmt -check
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-            - name: Initialize Terraform
-              run: terraform init
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
 
-            - name: Validate Terraform Configuration
-              run: terraform validate
+      - name: Check Terraform Formatting
+        run: terraform fmt -check -recursive
 
-            - name: Plan Terraform Changes
-              run: terraform plan -out=tfplan -no-color
+      - name: Initialize Terraform
+        run: terraform init
 
-            - name: Convert plan to readable text
-              run: terraform show -no-color tfplan > tfplan.txt
+      - name: Validate Terraform Configuration
+        run: terraform validate
+
+      - name: Plan Terraform Changes
+        run: terraform plan -out=tfplan -no-color
+
+      - name: Convert Plan To Readable Text
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: tfplan.txt
